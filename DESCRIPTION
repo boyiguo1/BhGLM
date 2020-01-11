@@ -13,7 +13,7 @@ Encoding: UTF-8
 LazyData: true
 Depends: 
     R (>= 3.2)
-RoxygenNote: 7.0.0
+RoxygenNote: 7.0.2
 Imports: 
     glmnet,
     stats,

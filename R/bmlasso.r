@@ -17,10 +17,10 @@
 #' @param init 
 #' @param ss 
 #' @param group 
-#' @param Warning 
+#' @param Warning E
 #' @param verbose 
 #'
-#' @return This function returns all outputs from the function \code{\link{glmnet}}, and some other values used in Bayesian hierarchical models.
+#' @return This function returns all outputs from the function \code{\link[glmnet]{glmnet}}, and some other values used in Bayesian hierarchical models.
 #' @export
 #' @import glmnet
 #' @importFrom stats sd
@@ -44,9 +44,9 @@
 #'  Nengjun Yi, nyi@uab.edu
 #' }
 #' 
-#' #@seealso{
-#' #  \code{\link{glmnet}}, \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
-#' #}
+#' @seealso{
+#'   \code{\link[glmnet]{glmnet}}#,TODO:: adding these back \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
+#' }
 #'
 #' @examples
 # library(BhGLM)
@@ -125,8 +125,28 @@ bmlasso <- function(x, y, family = c("gaussian", "binomial", "poisson", "cox"), 
   return(f)
 }
 
-# ******************************************************************************
 
+
+#' Title
+#'
+#' @param x 
+#' @param y 
+#' @param family 
+#' @param offset 
+#' @param epsilon 
+#' @param maxit 
+#' @param init 
+#' @param group 
+#' @param ss 
+#' @param Warning 
+#'
+#' @noRd
+#'  
+#' @return
+#' @importFrom  glmnet glmnet
+#' @importFrom stats coef deviance predict
+#'
+#' @examples
 bmlasso.fit <- function(x, y, family = "gaussian", offset = NULL, epsilon = 1e-04, maxit = 50, 
                         init = rep(0, ncol(x)), group = NULL, ss = c(0.04, 0.5), 
                         Warning = FALSE)

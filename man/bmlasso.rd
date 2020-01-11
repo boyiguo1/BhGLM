@@ -37,12 +37,12 @@ bmlasso(
 
 \item{group}{}
 
-\item{Warning}{}
+\item{Warning}{E}
 
 \item{verbose}{}
 }
 \value{
-This function returns all outputs from the function \code{\link{glmnet}}, and some other values used in Bayesian hierarchical models.
+This function returns all outputs from the function \code{\link[glmnet]{glmnet}}, and some other values used in Bayesian hierarchical models.
 }
 \description{
 This function is to set up Bayesian 
@@ -67,12 +67,13 @@ Simon, N., Friedman, J., Hastie, T. & Tibshirani, R. (2011) Regularization Paths
 Zaixiang Tang, Yueping Shen, Shu-Feng Lei, Xinyan Zhang, Zixuan Yi, Boyi Guo, Jake Chen, and Nengjun Yi (2019) Gsslasso Cox: a fast and efficient pathway-based framework for predicting survival and detecting associated genes. BMC Bioinformatics 20(94). 
 }
 }
+\seealso{
+{
+  \code{\link[glmnet]{glmnet}}#,TODO:: adding these back \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
+}
+}
 \author{
 {
  Nengjun Yi, nyi@uab.edu
 }
-
-#@seealso{
-#  \code{\link{glmnet}}, \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
-#}
 }
