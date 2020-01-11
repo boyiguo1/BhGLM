@@ -1,2 +1,3 @@
-^.*\.Rproj$
+^BhGLM\.package\.Rproj$
 ^\.Rproj\.user$
+^LICENSE\.md$

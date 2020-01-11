@@ -7,9 +7,7 @@ This R package provides functions for setting up and fitting various Bayesian hi
 Author: Nengjun Yi <nyi@uab.edu>;  Maintainer: Nengjun Yi <nyi@uab.edu>
 
 # Installation
-
-library(remotes)
-
-install_github("nyiuab/BhGLM", force=T, build_vignettes=T)
-
+```{r}
+devtools::install_github("nyiuab/BhGLM", force=T, build_vignettes=T)
+```
 
