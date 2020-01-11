@@ -14,7 +14,7 @@ LazyData: true
 Depends: 
     R (>= 3.2)
 RoxygenNote: 7.0.0
-VignetteBuilder: knitr, R.rsp
 Imports: 
     glmnet,
-    stats
+    stats,
+    survival

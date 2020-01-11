@@ -2,12 +2,12 @@
 
 #' Bayesian Spike-and-Slab Lasso Models
 #'
-#'\description{This function is to set up Bayesian 
+#' This function is to set up Bayesian 
 #'GLMs or Cox survival models with spike-and-slab 
 #'mixture double-exponential prior (called the Bayesian
 #' spike-and-slab mixture lasso), and to fit the model
 #'  by incorporating EM steps into the fast coordinate
-#'   descent algorithm. }
+#'   descent algorithm. 
 #'
 #'
 #' @param x input matrix, of dimension nobs x nvars; each row is an observation vector.
@@ -26,9 +26,9 @@
 #' @export
 #' @import glmnet
 #' @importFrom stats sd
-#' @importFrom survival Surv
+#' @importFrom survival is.Surv
 #'
-#'\references{
+#' @references {
 #' Friedman, J., Hastie, T. and Tibshirani, R. (2010) Regularization Paths for Generalized Linear Models via Coordinate Descent. J Stat Softw 33, 1-22.
 #'
 #' Simon, N., Friedman, J., Hastie, T. & Tibshirani, R. (2011) Regularization Paths for Cox's Proportional Hazards Model via Coordinate Descent. Journal of Statistical Software 39, 1-13.
@@ -42,11 +42,11 @@
 #' Zaixiang Tang, Yueping Shen, Shu-Feng Lei, Xinyan Zhang, Zixuan Yi, Boyi Guo, Jake Chen, and Nengjun Yi (2019) Gsslasso Cox: a fast and efficient pathway-based framework for predicting survival and detecting associated genes. BMC Bioinformatics 20(94). 
 #' }
 #' 
-#' \author{
+#' @author{
 #'  Nengjun Yi, nyi@uab.edu
 #' }
 #' 
-#' \seealso{
+#' @seealso{
 #'   \code{\link{glmnet}}, \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
 #' }
 #'

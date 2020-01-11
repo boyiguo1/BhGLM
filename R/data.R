@@ -1,6 +1,11 @@
-#' random dataset
+#' I don't know what does this dataset does
 #'
-#' I dont' event know if we should include this
-#' TODO: Add data description or Delete data set (delete this file + data folder)
+#' I don't know
+#'
+#' @format A data frame that have data:
+#' \describe{
+#' ...
+#' }
+#'  @source Idont know
 
 "fake.cv"
