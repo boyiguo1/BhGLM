@@ -52,42 +52,6 @@ spike-and-slab mixture lasso), and to fit the model
  by incorporating EM steps into the fast coordinate
   descent algorithm.
 }
-\examples{
-library(BhGLM)
-library(survival)
-library(glmnet)
-
-
-N = 1000
-K = 100
-x = sim.x(n=N, m=K, corr=0.6) # simulate correlated continuous variables  
-h = rep(0.1, 4) # assign four non-zero main effects to have the assumed heritabilty 
-nz = as.integer(seq(5, K, by=K/length(h))); nz
-yy = sim.y(x=x[, nz], mu=0, herit=h, p.neg=0.5, sigma=1.6) # simulate responses
-yy$coefs
-
-# y = yy$y.normal; fam = "gaussian"; y = scale(y)
-# y = yy$y.ordinal; fam = "binomial"
-y = yy$y.surv; fam = "cox" 
-
-group = NULL
-#group = rep(0, 21)
-#for(j in 1:length(group)) group[j] = (j-1) * K/(length(group)-1)
-
-# lasso and mixture lasso
-
-f1 = glmNet(x, y, family = fam, ncv = 1) 
-
-ps = f1$prior.scale; ps 
-ss = c(ps, 0.5)
-f2 = bmlasso(x, y, family = fam, ss = ss, group = group)
-
-par(mfrow = c(1, 2), mar = c(3, 4, 4, 4))
-gap = 10
-plot.bh(coefs = f1$coef, threshold = f1$df, gap = gap, main = "lasso") 
-plot.bh(coefs = f2$coef, threshold = f2$df, gap = gap, main = "mixture lasso") 
-
-}
 \references{
 {
 Friedman, J., Hastie, T. and Tibshirani, R. (2010) Regularization Paths for Generalized Linear Models via Coordinate Descent. J Stat Softw 33, 1-22.
@@ -103,13 +67,12 @@ Simon, N., Friedman, J., Hastie, T. & Tibshirani, R. (2011) Regularization Paths
 Zaixiang Tang, Yueping Shen, Shu-Feng Lei, Xinyan Zhang, Zixuan Yi, Boyi Guo, Jake Chen, and Nengjun Yi (2019) Gsslasso Cox: a fast and efficient pathway-based framework for predicting survival and detecting associated genes. BMC Bioinformatics 20(94). 
 }
 }
-\seealso{
-{
-  \code{\link{glmnet}}, \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
-}
-}
 \author{
 {
  Nengjun Yi, nyi@uab.edu
 }
+
+#@seealso{
+#  \code{\link{glmnet}}, \code{\link{glmNet}}, \code{\link{bglm}}, \code{\link{bcoxph}}
+#}
 }
