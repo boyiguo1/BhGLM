@@ -720,52 +720,6 @@ prepare <- function(x, intercept, prior.mean, prior.sd, prior.scale, prior.df, g
          group=group, group.vars=group.vars, ungroup.vars=ungroup.vars)
 }  
 
-Grouping <- function(all.var, group) 
-{ 
-  n.vars <- length(all.var)
-  group.vars <- list()
-  
-  if (is.matrix(group))
-  {
-    if (nrow(group)!=ncol(group) | ncol(group)>n.vars) 
-      stop("wrong dimension for 'group'")
-    if (any(rownames(group)!=colnames(group)))
-      stop("rownames should be the same as colnames")
-    if (any(!colnames(group)%in%all.var))
-      stop("variabe names in 'group' not in the model predictors")
-    group.vars <- colnames(group)
-    group <- abs(group)
-    wcol <- rowSums(group) - diag(group)
-    group <- group/wcol
-  }
-  else{
-    if (is.list(group)) group.vars <- group
-    else
-    {
-      if (is.numeric(group) & length(group)>1) { 
-        group <- sort(group)  
-        if (group[length(group)] > n.vars) stop("wrong grouping")
-      }
-      if (is.numeric(group) & length(group)==1)
-        group <- as.integer(seq(0, n.vars, length.out = n.vars/group + 1))
-      if (is.null(group)) group <- c(0, n.vars)
-      group <- unique(group)
-      for (j in 1:(length(group) - 1))
-        group.vars[[j]] <- all.var[(group[j] + 1):group[j + 1]]
-    }
-  }
-  all.group.vars <- unique(unlist(group.vars))
-  
-  if (length(all.group.vars) == n.vars) ungroup.vars <- NULL
-  else ungroup.vars <- all.var[which(!all.var %in% all.group.vars)]
-  
-  group.new <- c(length(ungroup.vars), length(ungroup.vars) + cumsum(lapply(group.vars, length)))
-  var.new <- c(ungroup.vars, unlist(group.vars))
-  
-  list(group=group, group.vars=group.vars, ungroup.vars=ungroup.vars, 
-       group.new=group.new, var.new=var.new) 
-}
-
 autoscale <- function(x, min.x.sd=1e-04)
 {
   scale <- apply(x, 2, sd)
