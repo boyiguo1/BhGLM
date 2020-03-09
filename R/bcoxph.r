@@ -1,8 +1,8 @@
 
 bcoxph <- function (formula, data, weights, subset, na.action, init, 
-                    control = coxph.control(eps = 1e-04, iter.max = 50), ties = c("breslow", "efron"), tt,  
-                    prior = Student(0, 0.5, 1), group = NULL, method.coef, 
-                    Warning = FALSE, verbose = FALSE, ...) 
+                    control=coxph.control(eps=1e-04, iter.max=50), ties=c("breslow", "efron"), tt,  
+                    prior=Student(0, 0.5, 1), group=NULL, method.coef, w.theta=NULL,
+                    Warning=FALSE, verbose=FALSE, ...) 
 {
   if (!requireNamespace("survival")) install.packages("survival")
     require(survival)
@@ -228,11 +228,12 @@ bcoxph <- function (formula, data, weights, subset, na.action, init,
         warning("initial values lead to overflow or underflow of the exp function")
     }
 
-    fit <- bcoxph.fit(X, Y, offset = offset, weights = weights, init = init, 
-                      control = control, strats = factor(strats),
-                      ties = ties, prior = prior, group = group, method.coef = method.coef, 
-                      prior.mean = prior.mean, prior.sd = prior.sd, 
-                      prior.scale = prior.scale, prior.df = prior.df, ss = ss, Warning = Warning) 
+    fit <- bcoxph.fit(X, Y, offset=offset, weights=weights, init=init, 
+                      control=control, strats=factor(strats),
+                      ties=ties, prior=prior, group=group, method.coef=method.coef, 
+                      prior.mean=prior.mean, prior.sd=prior.sd, 
+                      prior.scale=prior.scale, prior.df=prior.df, ss=ss, w.theta=w.theta,
+                      Warning=Warning) 
     
     na.action <- attr(mf, "na.action")
     if (length(na.action)) 
@@ -271,15 +272,15 @@ bcoxph <- function (formula, data, weights, subset, na.action, init,
 
 
 
-bcoxph.fit <- function(x, y, offset = rep(0, nobs), weights = rep(1, nobs), init = 0, strats = NULL,
-                       control = coxph.control(eps = 1e-04, iter.max = 50), ties = "efron", 
-                       prior = "t", group = NULL, method.coef = NULL, 
-                       prior.mean = 0, prior.sd = 1, prior.scale = 1, prior.df = 1, ss = c(0.05, 0.1), 
-                       Warning = FALSE) 
+bcoxph.fit <- function(x, y, offset=rep(0, nobs), weights=rep(1, nobs), init=0, strats=NULL,
+                       control=coxph.control(eps=1e-04, iter.max=50), ties="efron", 
+                       prior="t", group=NULL, method.coef=NULL, 
+                       prior.mean=0, prior.sd=1, prior.scale=1, prior.df=1, ss=c(0.05, 0.1), w.theta=NULL, 
+                       Warning=FALSE) 
 {
   ss <- sort(ss)
   ss <- ifelse(ss <= 0, 0.001, ss)
-  if (prior == "mde")
+  if (prior == "mde" | prior == "mt")
     prior.sd <- prior.scale <- ss[length(ss)]  # used for ungrouped coefficients
   
   d <- prepare(x = x, intercept = FALSE, prior.mean = prior.mean, prior.sd = prior.sd, prior.scale = prior.scale, 
@@ -304,11 +305,16 @@ bcoxph.fit <- function(x, y, offset = rep(0, nobs), weights = rep(1, nobs), init
   if (length(group0) > 1) method.coef <- "group"
   
   # for mixture prior
-  if (prior == "mde") {
+  if (prior == "mde" | prior == "mt") {
     if (length(ss) != 2) stop("ss should have two positive values")
     gvars <- unlist(group.vars)
     theta <- p <- rep(0.5, length(gvars))
     names(theta) <- names(p) <- gvars
+    
+    if (is.null(w.theta)) w.theta <- rep(1, length(gvars))
+    if (length(w.theta)!=length(gvars)) stop("all grouped variables should have w.theta")
+    if (any(w.theta > 1 | w.theta < 0)) stop("w.theta should be in [0,1]")
+    names(w.theta) <- gvars
   }
   
   names(init) <- colnames(x)
@@ -329,17 +335,17 @@ bcoxph.fit <- function(x, y, offset = rep(0, nobs), weights = rep(1, nobs), init
     if (iter > 1) {
       beta0 <- coefs.hat - prior.mean
       
-      if (prior == "mde") {
-        out <- update.scale.p(b0=beta0[gvars], ss=ss, theta=theta)
+      if (prior == "mde" | prior == "mt") {
+        out <- update.scale.p(prior=prior, df=prior.df[gvars], b0=beta0[gvars], ss=ss, theta=theta)
         prior.scale[gvars] <- out[[1]]   
         p <- out[[2]]
         if (!is.matrix(group))
-          theta <- update.ptheta.group(group.vars=group.vars, p=p)
+          theta <- update.ptheta.group(group.vars=group.vars, p=p, w.theta=w.theta)
         else theta <- update.ptheta.network(theta=theta, p=p, w=group) 
       }
       
-      prior.sd <- update.prior.sd(prior = prior, beta0 = beta0, prior.scale = prior.scale, 
-                                  prior.df = prior.df, sd.x = sd.x, min.x.sd = min.x.sd) 
+      prior.sd <- update.prior.sd(prior=prior, beta0=beta0, prior.scale=prior.scale, 
+                                  prior.df=prior.df, sd.x=sd.x, min.x.sd=min.x.sd) 
     } 
        
     if (method.coef == "joint") {
@@ -410,14 +416,17 @@ bcoxph.fit <- function(x, y, offset = rep(0, nobs), weights = rep(1, nobs), init
   fit$method.coef <- method.coef
   
   if (prior == "t") 
-    fit$prior <- list(prior="Stendent-t", mean=prior.mean, scale=prior.scale, df=prior.df)
+    fit$prior <- list(prior=prior, mean=prior.mean, scale=prior.scale, df=prior.df)
   if (prior == "de") 
-    fit$prior <- list(prior="Double-exponential", mean=prior.mean, scale=prior.scale)
-  if (prior == "mde") {
+    fit$prior <- list(prior=prior, mean=prior.mean, scale=prior.scale)
+  if (prior == "mde" | prior == "mt") {
     fit$prior.scale <- prior.scale
     fit$p <- p
     fit$ptheta <- theta
-    fit$prior <- list(prior="mixture double-exponential", mean=prior.mean, s0=ss[1], s1=ss[2])
+    if (prior == "mde")
+      fit$prior <- list(prior=prior, mean=prior.mean, s0=ss[1], s1=ss[2])
+    if (prior == "mt") 
+      fit$prior <- list(prior=prior, mean=prior.mean, s0=ss[1], s1=ss[2], df=prior.df)
   }
   
   fit
