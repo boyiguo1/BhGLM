@@ -40,6 +40,7 @@ joint_bglm.fit <- function (x,
   group.vars <- d$group.vars
   ungroup.vars <- d$ungroup.vars
   
+  # scale the prior scale by data
   prior.scale <- prior.scale / autoscale(x, min.x.sd)
   if (family[[1]]=="gaussian") prior.scale <- prior.scale * sd(y)
   
@@ -49,13 +50,14 @@ joint_bglm.fit <- function (x,
   group0 <- g0$group.vars
   covars0 <- g0$ungroup.vars  
   if (intercept) covars0 <- c(colnames(x)[1], covars0)
-  method.coef <- "joint"
+  method.coef <- "joint" # I don't think we need joint in this case
   if (length(group0) > 1) method.coef <- "group"
   
   # for mixture prior
   if (prior == "mde" | prior == "mt") {
     if (length(ss) != 2) stop("ss should have two positive values")
     gvars <- unlist(group.vars)
+    # setting up for the indicator probabilities
     theta <- p <- rep(0.5, length(gvars))
     names(theta) <- names(p) <- gvars
     
