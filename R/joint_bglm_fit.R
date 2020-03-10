@@ -16,7 +16,6 @@ joint_bglm.fit <- function (x,
                       prior.scale=1,
                       prior.df=1,
                       ss=c(0.05, 0.1), 
-                      w.theta=NULL,
                       Warning=FALSE)   
 {
   ss <- sort(ss)
@@ -61,10 +60,6 @@ joint_bglm.fit <- function (x,
     theta <- p <- rep(0.5, length(gvars))
     names(theta) <- names(p) <- gvars
     
-    if (is.null(w.theta)) w.theta <- rep(1, length(gvars))
-    if (length(w.theta)!=length(gvars)) stop("all grouped variables should have w.theta")
-    if (any(w.theta > 1 | w.theta < 0)) stop("w.theta should be in [0,1]")
-    names(w.theta) <- gvars
   }
   
   # for negative binomial model
@@ -151,15 +146,15 @@ joint_bglm.fit <- function (x,
     devold <- sum(dev.resids(y, mu, weights))
     boundary <- conv <- FALSE
     
-    
+    # When there are starting values, use starting value, otherwise, use prior mean
     if (!is.null(start)){
       coefs.hat <- start
       names(coefs.hat) <- names(prior.mean)
     }
     else coefs.hat <- prior.mean
     dispersionold <- dispersion
-    for (iter in 1:control$maxit) {
-      
+    for (iter in 1:control$maxit) {# start for loop
+      # Check for variance 
       good <- weights > 0
       varmu <- variance(mu)[good]
       varmu <- ifelse(varmu == 0, 1e-04, varmu)
@@ -184,6 +179,7 @@ joint_bglm.fit <- function (x,
       
       w <- ifelse(w == 0, 1e-04, w) # I add
       
+      # update  the prior informations, such as theta, scale and p
       if (iter > 1) {
         beta0 <- (coefs.hat - prior.mean)/sqrt(dispersion)
         
@@ -191,9 +187,7 @@ joint_bglm.fit <- function (x,
           out <- update.scale.p(prior=prior, df=prior.df[gvars], b0=beta0[gvars], ss=ss, theta=theta)
           prior.scale[gvars] <- out[[1]]   
           p <- out[[2]]
-          if (!is.matrix(group))
-            theta <- update.ptheta.group(group.vars=group.vars, p=p, w.theta=w.theta)
-          else theta <- update.ptheta.network(theta=theta, p=p, w=group) 
+          theta <- update.ptheta.network(theta=theta, p=p, w=group) 
         }
         
         prior.sd <- update.prior.sd(prior = prior, beta0 = beta0, prior.scale = prior.scale, 
@@ -201,23 +195,23 @@ joint_bglm.fit <- function (x,
       }
       
       
-      if (method.coef == "joint") {  
-        z.star <- c(z, prior.mean)
-        x.prior <- diag(NCOL(x)) 
-        colnames(x.prior) <- colnames(x)
-        x.star <- rbind(x, x.prior)
-        w.star <- c(w, 1/(prior.sd + 1e-04) )
-        #            good.star <- c(good, rep(TRUE, NCOL(x.prior)))
-        #            fit <- qr(x.star[good.star, , drop = FALSE] * w.star, tol = min(1e-07, control$epsilon/1000))
-        fit <- qr(x.star * w.star, tol = min(1e-07, control$epsilon/1000))
-        fit$coefficients <- qr.coef(fit, z.star * w.star)
-        coefs.hat <- fit$coefficients
-        if (any(!is.finite(fit$coefficients))) {
-          conv <- FALSE
-          warning("non-finite coefficients at iteration ", iter)
-          break
-        }
-      }  
+      # if (method.coef == "joint") {  
+      #   z.star <- c(z, prior.mean)
+      #   x.prior <- diag(NCOL(x)) 
+      #   colnames(x.prior) <- colnames(x)
+      #   x.star <- rbind(x, x.prior)
+      #   w.star <- c(w, 1/(prior.sd + 1e-04) )
+      #   #            good.star <- c(good, rep(TRUE, NCOL(x.prior)))
+      #   #            fit <- qr(x.star[good.star, , drop = FALSE] * w.star, tol = min(1e-07, control$epsilon/1000))
+      #   fit <- qr(x.star * w.star, tol = min(1e-07, control$epsilon/1000))
+      #   fit$coefficients <- qr.coef(fit, z.star * w.star)
+      #   coefs.hat <- fit$coefficients
+      #   if (any(!is.finite(fit$coefficients))) {
+      #     conv <- FALSE
+      #     warning("non-finite coefficients at iteration ", iter)
+      #     break
+      #   }
+      # }  
       
       if (method.coef != "joint") {  
         for (j in 1:length(group0)) {
