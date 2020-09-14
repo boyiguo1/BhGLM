@@ -43,7 +43,7 @@ cv.bh <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
 
 generate.foldid <- function(nobs, nfolds=10, foldid=NULL, ncv=1)
 {
-  if (nfolds > nobs) nfolds <- n
+  if (nfolds > nobs) nfolds <- nobs
   if (nfolds == nobs) ncv <- 1
   if (is.null(foldid)) {
    foldid <- array(NA, c(nobs, ncv)) 
@@ -71,6 +71,8 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   measures0 <- lp0 <- y.fitted0 <- NULL
   j <- 0
   
+  prior = object$prior
+  
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
     y.fitted <- lp <- rep(NA, n)
@@ -80,7 +82,7 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
       subset1 <- rep(TRUE, n)
       omit <- which(foldid[, k] == i)
       subset1[omit] <- FALSE
-      fit <- update(object, subset = subset1)
+      fit <- update(object, subset = subset1, prior = prior)
       lp[omit] <- predict(fit, newdata=data.obj[omit, , drop=FALSE])
       y.fitted[omit] <- object$family$linkinv(lp[omit])
       if (any(class(object) %in% "negbin")) fit$dispersion <- fit$theta
