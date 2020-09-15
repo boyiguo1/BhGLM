@@ -70,6 +70,10 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   ncv <- fol$ncv
   measures0 <- lp0 <- y.fitted0 <- NULL
   j <- 0
+  if (!is.null(object$offset)) {
+    data.obj <- object$data
+    if (is.null(object$data)) stop("'data' not given in object")
+  }
   
   prior = object$prior
   
@@ -131,6 +135,10 @@ cv.bh.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   ncv <- fol$ncv
   measures0 <- lp0 <- NULL
   j <- 0
+  if (!is.null(object$offset)) {
+    data.obj <- object$data
+    if (is.null(object$data)) stop("'data' not given in object")
+  }
   
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
@@ -259,6 +267,10 @@ cv.bh.polr <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   measures0 <- NULL
   y.fitted0 <- list()
   j <- 0
+  if (!is.null(object$offset)) {
+    data.obj <- object$data
+    if (is.null(object$data)) stop("'data' not given in object")
+  }
 
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv * nfolds, "models: \n")
   for (k in 1:ncv) {
@@ -313,6 +325,10 @@ cv.gam.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   ncv <- fol$ncv
   measures0 <- lp0 <- y.fitted0 <- NULL
   j <- 0
+  if (!is.null(object$offset)) {
+    data.obj <- object$data
+    if (is.null(object$data)) stop("'data' not given in object")
+  }
   
   fam <- object$family$family
   if (substr(object$family$family, 1, 17) == "Negative Binomial")
@@ -330,8 +346,9 @@ cv.gam.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
       fit <- update(object, subset = subset1)
       lp[omit] <- predict(fit, newdata=data.obj[omit, , drop=FALSE])
       y.fitted[omit] <- object$family$linkinv(lp[omit])
-      if (fam[[1]] == "NegBin") fit$dispersion <- fit$family$getTheta(TRUE)
-      dd <- suppressWarnings( measure.glm(y.obj[omit], y.fitted[omit], family=fam, dispersion=fit$dispersion) ) 
+      disp <- fit$sig2
+      if (fam[[1]] == "NegBin") disp <- fit$family$getTheta(TRUE)
+      dd <- suppressWarnings( measure.glm(y.obj[omit], y.fitted[omit], family=fam, dispersion=disp) ) 
       deviance <- c(deviance, dd["deviance"])
       
       if (verbose) {
@@ -376,6 +393,10 @@ cv.gam.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   ncv <- fol$ncv
   measures0 <- lp0 <- NULL
   j <- 0
+  if (!is.null(object$offset)) {
+    data.obj <- object$data
+    if (is.null(object$data)) stop("'data' not given in object")
+  }
   
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
