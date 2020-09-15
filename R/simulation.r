@@ -7,21 +7,38 @@ sim.x <- function(n, m, group = NULL, corr = 0.6, v = rep(1, m), p = 0.5, genoty
   start.time <- Sys.time()
   if (is.list(group)) {
     vars <- unlist(group)
-    m <- length(unique(vars))
+    if(m!=length(unique(vars))){
+      m <- length(unique(vars))
+      warning("Inconsistency between m and variables in group lists. Updateing m according to group")
+    }
   }
   else vars <- paste("x", 1:m, sep = "")
-  g <- Grouping(all.var = vars, group = group)
-  group.vars <- g$group.vars
-  linked.vars <- link.vars(group.vars = group.vars)
-  V <- diag(m)
-  rownames(V) <- colnames(V) <- unique(vars)
-  for (j in 1:m) V[j, linked.vars[[j]]] <- 1
+  
+  # Set up within-group/between-group covarinces
   corr1 <- corr[1]
   corr2 <- 0
   if (length(corr) > 1) corr2 <- corr[2]
+  
+  # This is not correct when group is a matrix
+  # group should be a list of lists, where each element is the grouping elements
+  if(!is.matrix(group)) {
+    g <- Grouping(all.var = vars, group = group)
+    group.vars <- g$group.vars
+    linked.vars <- link.vars(group.vars = group.vars)
+    V <- diag(m)
+    rownames(V) <- colnames(V) <- unique(vars)
+    for (j in 1:m) V[j, linked.vars[[j]]] <- 1  
+  }
+  else {
+    # Have not tested yet
+    if(nrow(group)!=ncol(group) || !isSymmetric.matrix(group))
+      stop("group is not a symmetric square network matrix")
+    
+    V[,names(group),drop=FALSE] <- ifelsle(group!=0,1,0)
+  }
+
   V <- ifelse(V == 1, corr1, corr2)
   diag(V) <- v
-   
   method <- method[1]
   x <- matrix(0, n, m)
   colnames(x) <- unique(vars)
