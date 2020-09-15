@@ -1,23 +1,23 @@
 
 #*******************************************************************************
 
-cv.bh <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
+cv.bh <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL, verbose=TRUE)
 {
   start.time <- Sys.time()
   
   if (!"gam" %in% class(object))
   {
     if (any(class(object) %in% "glm")) 
-      out <- cv.bh.glm(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
+      out <- cv.bh.glm(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   
     if (any(class(object) %in% "coxph")) 
-      out <- cv.bh.coxph(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
+      out <- cv.bh.coxph(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   
     if (any(class(object) %in% "glmNet") | any(class(object) %in% "bmlasso")) 
       out <- cv.bh.lasso(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
   
     if (any(class(object) %in% "polr")) 
-      out <- cv.bh.polr(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
+      out <- cv.bh.polr(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   }
   else
   {
@@ -28,9 +28,9 @@ cv.bh <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
     if (! fam %in% gam.fam)
       stop("Cross-validation for this family has not been implemented yet")
     if (fam %in% gam.fam[1:6])
-      out <- cv.gam.glm(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
+      out <- cv.gam.glm(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
     if (fam == "Cox PH")
-      out <- cv.gam.coxph(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
+      out <- cv.gam.coxph(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   }
   
   stop.time <- Sys.time()
@@ -59,7 +59,7 @@ generate.foldid <- function(nobs, nfolds=10, foldid=NULL, ncv=1)
   
 
 ### for bglm, glm
-cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
+cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1,  prior = NULL,verbose=TRUE)
 {
   data.obj <- model.frame(object)
   y.obj <- model.response(data.obj)
@@ -75,7 +75,7 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
     if (is.null(object$data)) stop("'data' not given in object")
   }
   
-  prior = object$prior
+  if(is.null(prior)) prior <- object$prior
   
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
@@ -124,7 +124,7 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
 }
 
 # for bcoxph, coxph
-cv.bh.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
+cv.bh.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = prior, verbose=TRUE)
 {
   data.obj <- model.frame(object)
   y.obj <- model.response(data.obj)
@@ -148,7 +148,7 @@ cv.bh.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
       subset1 <- rep(TRUE, n)
       omit <- which(foldid[, k] == i)
       subset1[omit] <- FALSE
-      fit <- update(object, subset = subset1)
+      fit <- update(object, subset = subset1, prior = prior,)
       lp[omit] <- predict(fit, newdata=data.obj[omit, , drop=FALSE])
       
       if (verbose) {
@@ -193,7 +193,9 @@ cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   ncv <- fol$ncv
   measures0 <- lp0 <- y.fitted0 <- NULL
   j <- 0
-  
+
+  if(is.null(prior)) prior <- object$prior
+    
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
     y.fitted <- lp <- rep(NA, n)
@@ -255,7 +257,7 @@ cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
 
 
 ### for bpolr, polr
-cv.bh.polr <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
+cv.bh.polr <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = prior, verbose=TRUE)
 { 
   data.obj <- model.frame(object)
   y.obj <- model.response(data.obj)
@@ -271,7 +273,9 @@ cv.bh.polr <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
     data.obj <- object$data
     if (is.null(object$data)) stop("'data' not given in object")
   }
-
+  
+  if(is.null(prior)) prior <- object$prior
+  
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv * nfolds, "models: \n")
   for (k in 1:ncv) {
     y.fitted <- array(0, c(n, length(levels(y.obj))))
@@ -280,7 +284,7 @@ cv.bh.polr <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
       subset1 <- rep(TRUE, n)
       omit <- which(foldid[, k] == i)
       subset1[omit] <- FALSE
-      fit <- update(object, subset=subset1, Hess=FALSE) 
+      fit <- update(object, subset=subset1, Hess=FALSE, prior = prior) 
       y.fitted[omit, ] <- predict(fit, newdata=data.obj[omit, , drop=FALSE], type="probs")
       
       if (verbose) {
