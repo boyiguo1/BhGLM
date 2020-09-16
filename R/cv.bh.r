@@ -14,7 +14,7 @@ cv.bh <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL, verbose=T
       out <- cv.bh.coxph(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   
     if (any(class(object) %in% "glmNet") | any(class(object) %in% "bmlasso")) 
-      out <- cv.bh.lasso(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, verbose=verbose)
+      out <- cv.bh.lasso(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   
     if (any(class(object) %in% "polr")) 
       out <- cv.bh.polr(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
@@ -75,7 +75,7 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1,  prior = NULL,verbo
     if (is.null(object$data)) stop("'data' not given in object")
   }
   
-  if(is.null(prior)) prior <- object$prior
+  if(is.null(prior)) prior <- object$ss
   
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
@@ -177,7 +177,7 @@ cv.bh.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = prior, ve
 }
 
 # for lasso, mlasso
-cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
+cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL,  verbose=TRUE)
 { 
   family <- object$family
   x.obj <- object$x
@@ -194,7 +194,9 @@ cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
   measures0 <- lp0 <- y.fitted0 <- NULL
   j <- 0
 
-  if(is.null(prior)) prior <- object$prior
+  if(is.null(prior)) ss <- object$ss
+  else if (is.list(prior)) ss <- prior$ss
+  else ss <- prior
     
   if (verbose) cat("Fitting", "ncv*nfolds =", ncv*nfolds, "models: \n")
   for (k in 1:ncv) {
@@ -210,7 +212,7 @@ cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, verbose=TRUE)
                       lambda=object$lambda, verbose=FALSE)
       if (any(class(object) %in% "bmlasso"))
         fit <- update(object, x=x.obj[-omit, ], y=y.obj[-omit], offset=offset[-omit], 
-                      init=init, verbose=FALSE)
+                      init=init, verbose=FALSE, ss = ss)
       if (is.null(fit$offset)) fit$offset <- FALSE
       else fit$offset <- TRUE
       xx <- x.obj[omit, , drop=FALSE]
