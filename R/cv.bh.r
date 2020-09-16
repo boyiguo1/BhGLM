@@ -4,17 +4,17 @@
 cv.bh <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL, verbose=TRUE)
 {
   start.time <- Sys.time()
-  
+  group <- object$group
   if (!"gam" %in% class(object))
   {
     if (any(class(object) %in% "glm")) 
-      out <- cv.bh.glm(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
+      out <- cv.bh.glm(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, group = group, verbose=verbose)
   
     if (any(class(object) %in% "coxph")) 
       out <- cv.bh.coxph(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
   
     if (any(class(object) %in% "glmNet") | any(class(object) %in% "bmlasso")) 
-      out <- cv.bh.lasso(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
+      out <- cv.bh.lasso(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, group = group, verbose=verbose)
   
     if (any(class(object) %in% "polr")) 
       out <- cv.bh.polr(object=object, nfolds=nfolds, foldid=foldid, ncv=ncv, prior = prior, verbose=verbose)
@@ -59,7 +59,7 @@ generate.foldid <- function(nobs, nfolds=10, foldid=NULL, ncv=1)
   
 
 ### for bglm, glm
-cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1,  prior = NULL,verbose=TRUE)
+cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1,  prior = NULL, group = group, verbose=TRUE)
 {
   data.obj <- model.frame(object)
   y.obj <- model.response(data.obj)
@@ -86,7 +86,7 @@ cv.bh.glm <- function(object, nfolds=10, foldid=NULL, ncv=1,  prior = NULL,verbo
       subset1 <- rep(TRUE, n)
       omit <- which(foldid[, k] == i)
       subset1[omit] <- FALSE
-      fit <- update(object, subset = subset1, prior = prior)
+      fit <- update(object, data = object$data, subset = subset1, prior = prior, group = group)
       lp[omit] <- predict(fit, newdata=data.obj[omit, , drop=FALSE])
       y.fitted[omit] <- object$family$linkinv(lp[omit])
       if (any(class(object) %in% "negbin")) fit$dispersion <- fit$theta
@@ -177,7 +177,7 @@ cv.bh.coxph <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = prior, ve
 }
 
 # for lasso, mlasso
-cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL,  verbose=TRUE)
+cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL, group = group, verbose=TRUE)
 { 
   family <- object$family
   x.obj <- object$x
@@ -212,7 +212,7 @@ cv.bh.lasso <- function(object, nfolds=10, foldid=NULL, ncv=1, prior = NULL,  ve
                       lambda=object$lambda, verbose=FALSE)
       if (any(class(object) %in% "bmlasso"))
         fit <- update(object, x=x.obj[-omit, ], y=y.obj[-omit], offset=offset[-omit], 
-                      init=init, verbose=FALSE, ss = ss)
+                      init=init, verbose=FALSE, ss = ss, group = group)
       if (is.null(fit$offset)) fit$offset <- FALSE
       else fit$offset <- TRUE
       xx <- x.obj[omit, , drop=FALSE]
