@@ -46,6 +46,8 @@ export(mt)
 export(mbglm)
 export(summary.mbglm)
 
+export(create_HD_formula)
+
 #************************************
 
 
