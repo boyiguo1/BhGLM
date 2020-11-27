@@ -12,3 +12,4 @@ VignetteBuilder: knitr
 Suggests: 
     knitr,
     rmarkdown
+RoxygenNote: 7.1.1
