@@ -45,7 +45,7 @@ sim.eta(x, mu, coefs, herit, sigma, p.neg) # Simulate the linear predictors
 sim.y(x, mu, coefs, herit, p.neg, sigma, quantiles, theta, df) # Simulate outcomes
 ```
 
-The simulation functions were firstly designed to simulate rare variants for genetic study, following @fenner2012a. Later on, these functions were improved to accommodate different structures underlying the predictors, such as (non-overlapping, overlapping) grouped structure [@zhang], network structure.
+The simulation functions were firstly designed to simulate rare variants for genetic study, following @fenner2012a. Later on, these functions were improved to accommodate different structures underlying the predictors, such as (non-overlapping, overlapping) grouped structure, network structure.
 
 
 
@@ -80,7 +80,7 @@ sim.x(n, m, group = grp)
 ### Network Groupped Predictors
 ```{r}
 
-sim.x(n, m, group=A)
+# sim.x(n, m, group=A)
 
 ```
 ## Simulate Genotyping Data
