@@ -1,50 +1,24 @@
 ---
-title: "Using Spline in bglm"
+title: "Method Evaluation"
 author: "Boyi Guo"
-date: "10/29/2020"
-output: rmarkdown::html_vignette
-vignette: >
-%\VignetteIndexEntry{Using Spline in bglm}
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteEncoding{UTF-8}
+date: "1/19/2021"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval=T)
-```
-
-### Dependency
-We would need the package `mgcv` to create spline data
-
-```{r}
+knitr::opts_chunk$set(echo = F, message= F)
+library(BhGLM)
+library(tidyverse)
+library(grid)
+library(ggeffects)
+library(ggplot2)
+library(gridExtra)
+library(splines)
 library(mgcv)
-```
 
-### Simulate data
-Following the data simulation example in `gam` from `mgcv`
 
-```{r}
-set.seed(2) ## simulate some data... 
-dat <- gamSim(1,n=400,dist="normal",scale=2)
-```
-
-### Prepare fitting data
-```{r}
-  G <- gam(y~s(x0, bs="cr")+x1+ x2+s(x3),data=dat, fit=FALSE, family = Gamma,drop.intercept = TRUE)
-```
-
-This step creates the model without fitting it. The spline terms are stored in `r G$smooth` as a list, where each element is one of the spline terms. Each spline model matrix, i.e. element of the list, has been reparameterized to add general linear constraints for identifiability purpose. For more detail, please refer to Wood(2017, pp. 47). 
-
-### Model estimation
-The estimation process are programmed in `estimate.gam`, which includes a reparameteriazation step `Sl.initial.repara` followed by the model fitting step. 
-
-#### Reparameterization to incorporate penalty matrix
-This reparemterization is to incorporate the penalty matrix $S$ into the model matrix of the spline terms such that the coefficeints can be independently distributed. in `mgcv`. Before the the reparemterization, we use the function `Sl.setup` to setup necessary matrix. The fopllowing code is a refactoring of the orginal internal function of mgcv:
-
-* Remove paraPen
-* Removing multiple S matrices
-
-```{r}
 Sl.setup <- function(G,cholesky=FALSE) {
   ## Sets up a list representing a block diagonal penalty matrix.
   ## from the object produced by `gam.setup'.
@@ -177,19 +151,7 @@ Sl.setup <- function(G,cholesky=FALSE) {
   attr(Sl,"cholesky") <- cholesky ## store whether this is Cholesky based or not
   Sl ## the penalty list
 } ## end of Sl.setup
-```
 
-As the example, we use the `Sl.setup` to prepare the reparameterization for our model $G$
-
-```{r}
-
- G$Sl <- Sl.setup(G) ## prepare penalty sequence
-```
-
-the internal function `Sl.initial.repara` is to actually do the reparemeterization following the steps. However, the internal function not only to the repparameterization, but also able to transform the estimated parameter and covariance back to the original space, with the argumetn `inverse=TRUE`. please refer to the following function. Meanwhile we noticed that the author of `mgcv` implemented his own fast computation of matrix multiplication in C: the argument `nt` indicates the number of threads to be used. The argument `both.sides` indicate if the the D reparmeterzation matrix $D$ in `Sl` need to  be multiplied on both sides of `X`
-
-
-```{r}
 
 Sl.initial.repara <- function(Sl,X,inverse=FALSE,both.sides=TRUE,cov=TRUE,nt=1) {
   ## Routine to apply initial Sl re-parameterization to model matrix X,
@@ -263,58 +225,203 @@ Sl.initial.repara <- function(Sl,X,inverse=FALSE,both.sides=TRUE,cov=TRUE,nt=1) 
   }
   X
 } ## end Sl.initial.repara
+```
+
+## Data Simulation
+```{r}
+N <- 1000
+p <- 4
+
+set.seed(1)
+
+tmp <- sim_Bai_logistic(N, p)
+dat <- tmp$dat %>% data.frame
+theta <- tmp$theta
 
 ```
 
-Example
 ```{r}
-G$X <- Sl.initial.repara(G$Sl,G$X,both.sides=FALSE) ## re-parameterize accordingly
+f_x1 <- function(x){
+  lp <- 5*sin(2*pi*x)
+  return(exp(lp)/(1+exp(lp)))
+}
+
+f_x2 <- function(x){
+  lp <- - 4*cos(2*pi*x-0.5)
+    return(exp(lp)/(1+exp(lp)))
+}
+
+f_x3 <- function(x){
+  lp <- 6*(x-0.5)
+    return(exp(lp)/(1+exp(lp)))
+}
+
+f_x4 <- function(x){
+  lp <- -5*(x^2-0.3)
+    return(exp(lp)/(1+exp(lp)))
+}
+
+true_p1 <- ggplot(data.frame(x = c(-3, 3)), aes(x=x)) + stat_function(fun = f_x1) + ylab("Response") + xlab("x1")
+true_p2 <- ggplot(data.frame(x = c(-3, 3)), aes(x=x)) + stat_function(fun = f_x2) + ylab("Response") + xlab("x2")
+true_p3 <- ggplot(data.frame(x = c(-3, 3)), aes(x=x)) + stat_function(fun = f_x3) + ylab("Response") + xlab("x3")
+true_p4 <- ggplot(data.frame(x = c(-3, 3)), aes(x=x)) + stat_function(fun = f_x4) + ylab("Response") + xlab("x4")
+grid.arrange(true_p1, true_p2, true_p3, true_p4, nrow=2, ncol=2, 
+             top=textGrob("Data Generating Functions",gp=gpar(fontsize=20,font=3)))
+
+
 ```
 
 
-__NOTE__: when presenting the fitted outcome, it is important to transform to the orginal space of the parameter, otherwise, the prodiction function would not work.
 
-### Fitting spike and slab model
-What we need to do here is to create grouping based on 
+## MGCV model
 
+```{r echo=T}
+mgcv_mdl <- gam(y ~ s(x1, bs = "ps")+s(x2, bs = "ps")+s(x3, bs = "ps")+s(x4, bs = "ps"), 
+         data=dat %>% data.frame(), family=binomial, drop.intercept = F)
+# summary(mgcv_mdl)
+```
 
-Following is a function that creates the grouping
 ```{r}
-create_group <- function(G, intercept=T)
+ma = ggpredict(mgcv_mdl, terms="x1") 
+p1 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(mgcv_mdl, terms="x2") 
+p2 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(mgcv_mdl, terms="x3") 
+p3 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(mgcv_mdl, terms="x4") 
+p4 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+grid.arrange(p1, p2, p3, p4, nrow=2, ncol=2, 
+             top=textGrob("mgcv Model Estimation",gp=gpar(fontsize=20,font=3)))
+```
+
+## Navie Bhglm
+```{r echo=T}
+naive_bglm <- bglm(y ~ bs(x1,df=13)+bs(x2,df=13)+bs(x3,df=13)+bs(x4,df=13)-1, 
+          data=dat %>% data.frame, family=binomial, 
+          # TODO : adjust the grouping
+          group=c(0,13,26,39, 52),
+          prior=mt(mean=0, s0=0.04, s1=1, df=Inf))
+```
+
+```{r}
+
+ma = ggpredict(naive_bglm, terms="x1") 
+p1 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(naive_bglm, terms="x2") 
+p2 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(naive_bglm, terms="x3") 
+p3 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(naive_bglm, terms="x4") 
+p4 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+grid.arrange(p1, p2, p3, p4, nrow=2, ncol=2, 
+             top=textGrob("Naive group bglm Model Estimation",gp=gpar(fontsize=20,font=3)))
+```
+
+
+## Navie bhglm_spline
+```{r, echo=T}
+navie_bam <- bglm_spline(y ~ bs(x1,df=15)+bs(x2,df=15)+bs(x3,df=15)+bs(x4,df=15)-1, 
+          data=dat %>% data.frame, family=binomial, 
+          # TODO : adjust the group
+          group=c(0,15,30,45, 60),
+          prior=mt(mean=0, s0=0.04, s1=1, df=Inf))
+```
+
+```{r}
+
+ma = ggpredict(navie_bam, terms="x1") 
+p1 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(navie_bam, terms="x2") 
+p2 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(navie_bam, terms="x3") 
+p3 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+ma = ggpredict(navie_bam, terms="x4") 
+p4 = plot(ma, show.title=F) + ylab("Response") +
+  geom_rug(sides="b", colour="grey")
+grid.arrange(p1, p2, p3, p4, nrow=2, ncol=2, 
+             top=textGrob("Shared Indicator group bglm Model Estimation",gp=gpar(fontsize=20,font=3)))
+```
+
+
+## bhglm_spline
+```{r}
+G <- gam(y ~ s(x1, bs = "ps")+s(x2, bs = "ps")+s(x3, bs = "ps")+s(x4, bs = "ps"), 
+         data=dat %>% data.frame(), family=binomial,drop.intercept = TRUE, fit = FALSE)
+
+create_group <- function(G, drop.intercept=FALSE)
 {
   m <- length(G$smooth)
   
-  group <- c(G$smooth[[1]]$first.para,
+  group <- c(G$smooth[[1]]$first.para-1,
              map_dbl(G$smooth, .f = function(x){x$last.para}))
   
   
-  if(intercept == FALSE)
+  if(drop.intercept == TRUE)
     group <- group - 1
+  # TODO: consider if drop.intercept is needed. in this case, drop.intercept should be aligned with if the new formula have intercept, which possibly alter the position of the groups
+  return(group)
 }
+
+
+bgam_mdl <- bglm_spline(G$y~G$X-1, family = G$family, prior=mt(mean=0, s0=0.04, s1=1, df=Inf),
+     group = create_group(G, TRUE))
+
+lp_x1 <- G$X[,1:9]%*%coefficients(bgam_mdl)[1:9]
+p1 <- ggplot(data.frame(x1 = dat$x1, y = exp(lp_x1)/(1+exp(lp_x1))),
+       aes(x = x1, y = y)) + geom_point() + ylab("Response")
+
+lp_x2 <- G$X[,10:18]%*%coefficients(bgam_mdl)[10:18]
+p2 <- ggplot(data.frame(x2 = dat$x2, y = exp(lp_x2)/(1+exp(lp_x2))),
+       aes(x = x2, y = y)) + geom_point() + ylab("Response")
+
+lp_x3 <- G$X[,19:27]%*%coefficients(bgam_mdl)[19:27]
+p3 <- ggplot(data.frame(x3 = dat$x3, y = exp(lp_x3)/(1+exp(lp_x3))),
+       aes(x = x3, y = y)) + geom_point() + ylab("Response")
+
+lp_x4 <- G$X[,28:36]%*%coefficients(bgam_mdl)[28:36]
+p4 <- ggplot(data.frame(x4 = dat$x4, y = exp(lp_x4)/(1+exp(lp_x4))),
+       aes(x = x4, y = y)) + geom_point() + ylab("Response")
+
+grid.arrange(p1, p2, p3, p4, nrow=2, ncol=2, 
+             top=textGrob("Shared Indicator group bglm Model Estimation with mgcv splines",gp=gpar(fontsize=20,font=3)))
+
 ```
 
-### Reparmeterize the spline terms
-```{r}
-apply(G$smooth, FUN = function(x){
-  x
-  
-})
+
+
+
+```{r, eval=F, echo=F}
+
+ G$Sl <- Sl.setup(G) ## prepare penalty sequence
+G$X <- Sl.initial.repara(G$Sl,G$X,both.sides=FALSE) ## re-parameterize accordingly
+
+repa_mdl <- bglm_spline(G$y~G$X, family = G$family, prior=mt(mean=0, s0=0.04, s1=1, df=Inf),
+     group = create_group(G))
+
+lp_x1 <- G$X[,1:9]%*%coefficients(bgam_mdl)[1:9]
+plot(dat$x1,exp(lp_x1)/(1+exp(lp_x1)))
+
+lp_x2 <- G$X[,10:18]%*%coefficients(bgam_mdl)[10:18]
+plot(dat$x2,exp(lp_x2)/(1+exp(lp_x2)))
+
+lp_x3 <- G$X[,19:27]%*%coefficients(bgam_mdl)[19:27]
+plot(dat$x3,exp(lp_x3)/(1+exp(lp_x3)))
+
+lp_x4 <- G$X[,28:36]%*%coefficients(bgam_mdl)[28:36]
+plot(dat$x4,exp(lp_x4)/(1+exp(lp_x4)))
 
 ```
 
 
-
-## Model Fitting
-
-Fitting the model
-```{r}
-bglm_spline(G$y ~ G$X, family = G$family, prior = mde(0, 0.04, 0.5),
-     group = create_group(G, intercept=T))
-```
-
-
-#### GAM model
-
-```{r}
-  G <- gam(y~s(x0, bs="cr")+x1+ x2+s(x3),data=dat)
-```
+##

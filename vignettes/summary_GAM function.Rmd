@@ -1,0 +1,35 @@
+---
+title: "Untitled"
+author: "Boyi Guo"
+date: "1/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+In order to use the `summary.gam` to summaize bhgam objects, we need to have particular components of `gamObject`, which are listed below
+
+* `object$VP`
+* `edf`:
+* `sig2`
+* `scale.esitmated`
+* `nsdf`
+* `pterms`, `assign`
+
+
+Steps of `summary.gam`
+1. Caclculate covmat, scaling by `sig2` & dispersion iif dispersion exists. 
+2. Caclualte the p-values for parametric terms (contiuous or binary): following the Wald T test or Z test based on if the dispersion is estimated
+3. Calculate the p-values for parmetric terms (multi-level categorical): using a chisquare test. Nothing special
+4. Smooth terms use Inverted Nychka interval statistics
+
+
+
+# TODO: 
+What we need:
+1. First of all, calculate the EDF, there is example code in `gam.fit3.post.proc` or `Sl.postproc`. Not at the end of fast_REML file, there is an instruction on how to proceed.
+
+2. Compose the test based on Nychka in function `testStat`
