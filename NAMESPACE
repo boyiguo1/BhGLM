@@ -33,6 +33,7 @@ export(sim.x)
 export(sim.y)
 export(sim.eta)
 export(sim.out)
+export(sim_Bai_logistic)
 
 export(surv.curves)
 export(aucCox)
@@ -45,6 +46,8 @@ export(mt)
 
 export(mbglm)
 export(summary.mbglm)
+
+export(bglm_spline)
 
 export(create_HD_formula)
 
