@@ -40,8 +40,10 @@ create_HD_formula <- function(formula, data, spl_df, rm_overlap = TRUE, verbose=
    
   if(missing(formula)){
     if(!is.data.frame(data)) data <- data.frame(data)
-    formula = DF2formula(data)
+    formula <- DF2formula(data)
   }
+  
+  # TODO: check if formula contains dot, if yes data is required
   
   if(!missing(data)){
     warning("Both formula and dat provided, dat is ignored.")
@@ -63,9 +65,13 @@ create_HD_formula <- function(formula, data, spl_df, rm_overlap = TRUE, verbose=
     glue::glue_data("{Func}( {Var}{ifelse(is.na(Args)||Args=='', '', paste0(',', Args))})") %>% 
     paste(collapse  = " + ")
   sp_trm <- paste0("~ . + " , sp_trm)
+  
+  
+  # TODO: adding a condition to examing overlapping terms
   }
+  
   # Adding Spline Terms
-  ret <- update(formula, sp_trm)
+  ret <- update.formula(formula, sp_trm)
   
   if(verbose){
     cat("Create formula:\n")
