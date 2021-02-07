@@ -51,6 +51,8 @@ export(bglm_spline)
 export(create_lpmatrix)
 export(test_spline_terms)
 export(create_HD_formula)
+export(sim_Bai_logistic)
+export(create_group)
 
 #************************************
 
