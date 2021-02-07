@@ -48,7 +48,8 @@ export(mbglm)
 export(summary.mbglm)
 
 export(bglm_spline)
-
+export(create_lpmatrix)
+export(test_spline_terms)
 export(create_HD_formula)
 
 #************************************

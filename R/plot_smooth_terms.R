@@ -27,17 +27,20 @@
 #' plot_smooth_terms(1:4, G, coefficients(bgam_mdl),
 #'                        top = textGrob("bgam with mgcv",gp=gpar(fontsize=20,font=3)) )
 
-plot_smooth_terms <- function(term_index, G, coefs, top = NULL){
+plot_smooth_terms <- function(term_index, G, coefs, has_intercept = F, top = NULL){
   
   if(!all(term_index %in% 1:length(G$smooth)))
     stop("Element of term_index is out of scope of number of splines in mgcv pre-fit object G.")
   
   g_list <- lapply(term_index, FUN = function(i){
-    lp <- G$X[, G$smooth[[i]]$first.para:G$smooth[[i]]$last.para, drop=FALSE] %*% coefs[G$smooth[[i]]$first.para:G$smooth[[i]]$last.para]
+    coef_ind <- col_ind <- G$smooth[[i]]$first.para:G$smooth[[i]]$last.para
+    if(has_intercept) coef_ind <- coef_ind + 1
+    lp <- G$X[, col_ind, drop=FALSE] %*% coefs[coef_ind]
     
     ggplot(data.frame(x=G$mf[,G$smooth[[i]]$term],y = G$family$linkinv(lp)) )+ 
       geom_point(aes(x,y)) + ylab("Response")+
-      xlab(G$smooth[[i]]$label)
+      xlab(G$smooth[[i]]$label)+
+      ylim(0,1)
     
   })
   grid.arrange(grobs = g_list, ncol=2,
