@@ -238,6 +238,15 @@ bglm_spline.fit <- function (x, y, weights=rep(1, nobs), start=NULL, etastart=NU
         }
         else coefs.hat <- prior.mean
         dispersionold <- dispersion
+        
+        
+        coef_mat <- vector()
+        p_mat <- vector()
+        theta_mat <- vector()
+        prior.sd_mat <- vector()
+        prior.scale_mat <- vector()
+        
+        
         for (iter in 1:control$maxit) {
         
             good <- weights > 0
@@ -409,7 +418,15 @@ bglm_spline.fit <- function (x, y, weights=rep(1, nobs), start=NULL, etastart=NU
               if (is.null(validmu))
                 validmu <- function(mu) TRUE
             }
-
+            
+            coef_mat <- rbind(coef_mat, start)
+            p_mat <- rbind(p_mat, p)
+            theta_mat <- rbind(theta_mat, theta)
+            prior.sd_mat <- rbind(prior.sd_mat, prior.sd)
+            prior.scale_mat <- rbind(prior.scale_mat, prior.scale)
+            
+            cat("Convergence Criteria:", abs(dev - devold)/(0.1 + abs(dev)), "\n")
+            
             if (iter > 2 & abs(dev - devold)/(0.1 + abs(dev)) < control$epsilon) {
                 conv <- TRUE
                 coef <- start
@@ -497,7 +514,10 @@ bglm_spline.fit <- function (x, y, weights=rep(1, nobs), start=NULL, etastart=NU
                 df.residual = resdf, df.null = nulldf, y = y, z = z, converged = conv, boundary = boundary, 
                 intercept = intercept, 
                 prior.sd = prior.sd, dispersion = dispersion, group = group, group.vars = group.vars, 
-                ungroup.vars = ungroup.vars, method.coef = method.coef, family = family )
+                ungroup.vars = ungroup.vars, method.coef = method.coef, family = family,
+                debug_info = list(coef_mat = coef_mat, p_mat = p_mat, theta_mat = theta_mat, prior.sd_mat = prior.sd_mat,
+                                  prior.scale_mat = prior.scale_mat)
+                )
     
     if (prior == "t") 
       out$prior <- list(prior=prior, mean=prior.mean, scale=prior.scale, df=prior.df)
